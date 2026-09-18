@@ -1,47 +1,57 @@
 #!/usr/bin/env python3
-"""6단계(선택): Gradio 기반 웹 UI로 스무고개 플레이.
+"""스무고개 웹 UI (Gradio). scripts/play.py와 로직은 동일, 콘솔 input() 대신 브라우저 버튼으로 답한다.
 
-step4_play.py와 게임 로직은 완전히 동일하다. 다른 점은 콘솔 input() 대신
-브라우저에서 버튼을 눌러 답하고, 진행 기록이 텍스트박스에 실시간으로 표시된다는 것뿐이다.
+이 파일은 20q_llm 폴더를 압축 풀었을 때 생기는 scripts/ 폴더 안에 넣고 실행한다
+(scripts/play.py, scripts/eval.py와 같은 위치).
 
 설치:  pip install gradio
-실행:  python src/app_ui.py
-환경:  ADAPTER(기본 output/adapter)  MAXTURNS(기본 20)  SERVER_PORT(기본 7860)
-
-ADAPTER는 LoRA 어댑터 폴더 경로를 가리키면 된다(이미 Gemma 4 E4B 베이스가 설치된
-환경이라면 unsloth가 베이스 모델 + 어댑터를 함께 불러온다. step4_play.py와 동일한 방식).
+실행:  python scripts/app_ui.py
+옵션:  ADAPTER=<경로>  다른 어댑터로 실행 (기본: 20q_llm/adapter/)
+       MAXTURNS=20  SERVER_PORT=7860
 """
 import json
 import os
 import re
+from pathlib import Path
 
+try:
+    import sys
+    sys.stdout.reconfigure(line_buffering=True)
+except Exception:
+    pass
+
+ROOT = Path(__file__).resolve().parents[1]   # 20q_llm/
 os.environ.setdefault("UNSLOTH_RETURN_LOGITS", "0")
 
 import gradio as gr                              # noqa: E402
-import unsloth                                   # noqa: E402
+import unsloth                                   # noqa: E402  (반드시 torch보다 먼저)
 from unsloth import FastModel                    # noqa: E402
 import torch                                     # noqa: E402
 
-from common import SYS_QUESTIONER, user_turn, OUTPUT   # noqa: E402
-
-ADAPTER = os.environ.get("ADAPTER", str(OUTPUT / "adapter"))
+ADAPTER = os.environ.get("ADAPTER", str(ROOT / "adapter"))
 MAXTURNS = int(os.environ.get("MAXTURNS", "20"))
 JSON_RE = re.compile(r'\{[^{}]*"action"[^{}]*\}')
 
-print(f"[로딩] {ADAPTER}", flush=True)
+SYS = ("당신은 한국어 스무고개 '질문자'입니다. 정답은 일상에서 흔히 보는 '구체적인 명사' 하나입니다.\n"
+       "지금까지의 질문/답 기록을 보고, 남은 가능성을 가장 잘 둘로 가르는 예/아니오 질문을 하세요.\n"
+       "후보가 충분히 좁혀졌다고 판단되면 더 질문하지 말고 즉시 flag로 정답을 추측하세요. "
+       "확신이 100%가 아니어도, 좁혀졌다면 가장 가능성 높은 단어를 적극적으로 추측하는 편이 좋습니다. "
+       "질문만 반복하지 말고 충분히 좁혀졌으면 반드시 추측하세요. 매 턴 JSON 한 줄만 출력:\n"
+       '  {"action":"ask","question":"..."} 또는 {"action":"flag","guess":"단어"}')
+
+ASK_OPTS = ["네", "아니오", "가끔", "모름"]
+FLAG_OPTS = ["네, 맞습니다", "아니오, 틀렸습니다"]
+
+print(f"[로딩] {ADAPTER}  (첫 실행은 30초~1분)", flush=True)
 model, tok = FastModel.from_pretrained(model_name=ADAPTER, max_seq_length=1024,
                                        load_in_4bit=True, device_map={"": 0})
 model.eval()
 inner = getattr(tok, "tokenizer", tok)
 
-ASK_OPTS = ["네", "아니오", "가끔", "모름"]
-FLAG_OPTS = ["네, 맞습니다", "아니오, 틀렸습니다"]
-
 
 def next_action(hist):
-    """step4_play.py와 동일: 기록을 넣어 모델의 다음 행동(JSON) 하나를 받는다."""
-    msgs = [{"role": "system", "content": SYS_QUESTIONER},
-            {"role": "user", "content": user_turn(hist)}]
+    user = f"지금까지 기록:\n{hist or '(없음)'}\n\n다음 행동을 결정하세요."
+    msgs = [{"role": "system", "content": SYS}, {"role": "user", "content": user}]
     text = inner.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
     ids = inner(text, return_tensors="pt", add_special_tokens=False).input_ids.to("cuda")
     with torch.no_grad():
@@ -67,7 +77,6 @@ def new_state():
 
 
 def advance(state):
-    """모델이 형식 오류 없이 질문/추측을 내놓을 때까지 진행하고, 사람의 답을 기다리는 지점에서 멈춘다."""
     if state["done"]:
         return render_log(state["log"]), gr.update(visible=False), gr.update(visible=False), state
 
@@ -82,7 +91,7 @@ def advance(state):
     if act is None:
         state["hist"] += "(형식오류)\n"
         state["log"].append(f"[{state['turn']}] (형식 오류: {raw})")
-        return advance(state)  # 이번 턴은 소모하고 바로 다음 시도로 넘어간다
+        return advance(state)
 
     if act.get("action") == "flag":
         g = str(act.get("guess", "")).strip()
@@ -111,7 +120,8 @@ def submit_answer(choice, state):
     p = state["pending"]
     if p["type"] == "flag":
         if choice.startswith("네"):
-            state["log"].append(f"→ 정답! {state['turn']}턴 만에 맞혔습니다 🎉")
+            score = 0.85 ** max(state["turn"] - 5, 0)
+            state["log"].append(f"→ 정답! {state['turn']}턴 만에 맞혔습니다 🎉 (S={score:.3f})")
             state["done"] = True
             return render_log(state["log"]), gr.update(visible=False), gr.update(visible=False), state
         state["hist"] += f"추측: {p['guess']} -> 아닙니다\n"
@@ -125,7 +135,7 @@ def submit_answer(choice, state):
 with gr.Blocks(title="스무고개 sLLM") as demo:
     gr.Markdown(
         "## 🤔 스무고개 sLLM\n"
-        "마음속으로 단어 하나를 정하세요(학습 단어 목록: `data/words_917.txt`). "
+        "마음속으로 단어 하나를 정하세요(학습 단어 목록: `data/words_917.txt`, 목록 밖 단어도 가능). "
         "모델이 질문하면 아래 버튼으로 답하세요."
     )
     game_state = gr.State(new_state())
