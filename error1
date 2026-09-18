@@ -1,3 +1,5 @@
+python -m pip install torch --index-url https://download.pytorch.org/whl/cu126
+----------------------
 
 C:\Users\SMU\Desktop\20q_llm_code>python -m pip install --upgtade torchvision --index -url https://download.pythorch.org/whl/cu126
 
