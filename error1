@@ -1,3 +1,35 @@
+
+C:\Users\SMU\Desktop\20q_llm_code>python -m pip install --upgtade torchvision --index -url https://download.pythorch.org/whl/cu126
+
+Usage:
+  C:\Users\SMU\AppData\Local\Programs\Python\Python314\python.exe -m pip install [options] <requirement specifier>
+[package-index-options] ...
+  C:\Users\SMU\AppData\Local\Programs\Python\Python314\python.exe -m pip install [options] -r <requirements file>
+[package-index-options] ...
+  C:\Users\SMU\AppData\Local\Programs\Python\Python314\python.exe -m pip install [options] [-e] <vcs project url> ...
+  C:\Users\SMU\AppData\Local\Programs\Python\Python314\python.exe -m pip install [options] [-e] <local project path> ...
+  C:\Users\SMU\AppData\Local\Programs\Python\Python314\python.exe -m pip install [options] <archive url/path> ...
+
+no such option: --upgtade
+
+C:\Users\SMU\Desktop\20q_llm_code>python src/app_ui.py
+Traceback (most recent call last):
+  File "C:\Users\SMU\Desktop\20q_llm_code\src\app_ui.py", line 21, in <module>
+    import unsloth                                   # noqa: E402
+    ^^^^^^^^^^^^^^
+  File "C:\Users\SMU\AppData\Local\Programs\Python\Python314\Lib\site-packages\unsloth\__init__.py", line 1568, in <module>
+    from ._gpu_init import *
+  File "C:\Users\SMU\AppData\Local\Programs\Python\Python314\Lib\site-packages\unsloth\_gpu_init.py", line 97, in <module>
+    torchvision_compatibility_check()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\SMU\AppData\Local\Programs\Python\Python314\Lib\site-packages\unsloth\import_fixes.py", line 2530, in torchvision_compatibility_check
+    raise ImportError(message)
+ImportError: Unsloth: torch==2.14.0+cu126 requires torchvision>=0.29.0, but found torchvision==0.27.1. Try updating torchvision via `pip install --upgrade "torchvision>=0.29.0"`. Please refer to https://pytorch.org/get-started/previous-versions/ for more information.
+
+C:\Users\SMU\Desktop\20q_llm_code>
+
+-----------------
+
 Traceback (most recent call last):
   File "C:\Users\SMU\Desktop\20q_llm_code\src\app_ui.py", line 21, in <module>
     import unsloth                                   # noqa: E402
