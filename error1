@@ -1,3 +1,5 @@
+python -m pip install --upgrade torchvision --index-url https://download.pytorch.org/whl/cu126
+--------------------------
 C:\Users\SMU\Desktop\20q_llm_code>python -m pip install torch --index-url https://download.pytorch.org/whl/cu126
 Looking in indexes: https://download.pytorch.org/whl/cu126
 Requirement already satisfied: torch in C:\Users\SMU\AppData\Local\Programs\Python\Python314\Lib\site-packages (2.14.0+cu126)
