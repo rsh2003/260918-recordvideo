@@ -1,0 +1,21 @@
+C:\Users\SMU\Desktop\20q_llm_code>python src/app_ui.py
+Traceback (most recent call last):
+  File "C:\Users\SMU\Desktop\20q_llm_code\src\app_ui.py", line 21, in <module>
+    import unsloth                                   # noqa: E402
+    ^^^^^^^^^^^^^^
+  File "C:\Users\SMU\AppData\Local\Programs\Python\Python314\Lib\site-packages\unsloth\__init__.py", line 1568, in <module>
+    from ._gpu_init import *
+  File "C:\Users\SMU\AppData\Local\Programs\Python\Python314\Lib\site-packages\unsloth\_gpu_init.py", line 176, in <module>
+    import unsloth_zoo
+  File "C:\Users\SMU\AppData\Local\Programs\Python\Python314\Lib\site-packages\unsloth_zoo\__init__.py", line 398, in <module>
+    from .device_type import (
+    ...<6 lines>...
+    )
+  File "C:\Users\SMU\AppData\Local\Programs\Python\Python314\Lib\site-packages\unsloth_zoo\device_type.py", line 405, in <module>
+    DEVICE_TYPE : str = get_device_type()
+                        ~~~~~~~~~~~~~~~^^
+  File "C:\Users\SMU\AppData\Local\Programs\Python\Python314\Lib\site-packages\unsloth_zoo\device_type.py", line 389, in get_device_type
+    raise NotImplementedError("Unsloth cannot find any torch accelerator? You need a GPU.")
+NotImplementedError: Unsloth cannot find any torch accelerator? You need a GPU.
+
+C:\Users\SMU\Desktop\20q_llm_code>
